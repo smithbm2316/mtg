@@ -1,0 +1,6 @@
+{
+  "imports": {
+    "cliffy/": "https://deno.land/x/cliffy@v0.24.3/",
+    "dotenv": "https://deno.land/x/dotenv@v3.2.0/mod.ts"
+  }
+}

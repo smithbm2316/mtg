@@ -1,0 +1,16 @@
+{
+  "fmt": {
+    "options": {
+      "singleQuote": true,
+      "indentWidth": 2,
+      "lineWidth": 80,
+      "proseWrap": "preserve"
+    }
+  },
+  "tasks": {
+    "compile-to-path": "rm $HOME/.local/bin/mtg; deno compile --unstable --allow-env --allow-read --allow-net --allow-run --import-map ./import_map.jsonc -o $HOME/.local/bin/mtg ./mod.ts",
+    "compile": "deno compile --unstable --allow-env --allow-read --allow-net --allow-run --import-map ./import_map.jsonc ./mod.ts"
+    "dev": "deno run --unstable --allow-env --allow-read --allow-net --allow-run -o mtg ./mod.ts"
+  },
+  "importMap": "./import_map.jsonc"
+}
