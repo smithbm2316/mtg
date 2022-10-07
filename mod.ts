@@ -23,7 +23,7 @@ export function getEnvConfig(overrideConfig?: ConfigOptions): ConfigOptions {
   // the repo into your home folder in the ~/mtg folder. This is so that Deno knows where to find
   // the proper .env and .env.example files in this repo and you can execute the script from
   // anywhere on your system
-  const baseEnvPath = `${Deno.env.get('HOME')}/vincit/automate-with-deno/final`;
+  const baseEnvPath = `${Deno.env.get('HOME')}/mtg`;
 
   return {
     // don't allow this script to run properly if you
