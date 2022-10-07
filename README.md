@@ -185,6 +185,17 @@ import { Database, Row } from './deps.ts';
   - [Deno WebView is very experimental, but allows you to build your own mini web UI from a Deno
     script](https://github.com/webview/webview_deno)
 
+---
+
 ### Thank you for listening, any questions?
 
 <iframe src="https://giphy.com/embed/W1ecIq4sEofza" width="480" height="270" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/kung-fury-W1ecIq4sEofza">via GIPHY</a></p>
+
+---
+
+### Get this repo up and running
+
+1. `git clone` the repository to $HOME/mtg (your home folder)
+2. configure the `.env` and `.env.defaults` files to hold the proper key/value pairs for your zoom
+   and google meet links
+3. run `deno task dev` to run the script!
