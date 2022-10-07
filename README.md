@@ -22,7 +22,7 @@
 
 ### What is Deno?
 
-![[./deno.png]]
+![](./deno.png)
 
 ---
 
