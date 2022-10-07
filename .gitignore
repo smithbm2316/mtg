@@ -1,4 +1,5 @@
 .env
 .env.*
+!.env.defaults
 !.env.example
 mtg

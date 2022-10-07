@@ -22,7 +22,7 @@
 
 ### What is Deno?
 
-![[Pasted image 20221007103627.png]]
+![[./deno.png]]
 
 ---
 
@@ -176,6 +176,14 @@ import { Database, Row } from './deps.ts';
 <iframe src="https://giphy.com/embed/LRVnPYqM8DLag" width="480" height="269" frameBorder="0" class="giphy-embed" allowFullScreen></iframe><p><a href="https://giphy.com/gifs/reactiongifs-LRVnPYqM8DLag">via GIPHY</a></p>
 
 ---
+
+### Extra resources
+
+- For those of you who prefer GUIs and are on Macs, checkout ScriptKit or Deno WebView
+  - [ScriptKit uses Node, but has some awesome utilities to just get writing scripts and not think
+    about it too much](https://www.scriptkit.com/)
+  - [Deno WebView is very experimental, but allows you to build your own mini web UI from a Deno
+    script](https://github.com/webview/webview_deno)
 
 ### Thank you for listening, any questions?
 

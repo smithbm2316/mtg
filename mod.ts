@@ -1,26 +1,41 @@
 import { Command } from 'cliffy/command/mod.ts';
-import { prompt, Select } from 'cliffy/prompt/mod.ts';
+import { Select } from 'cliffy/prompt/mod.ts';
 import { colors } from 'cliffy/ansi/colors.ts';
 import { config } from 'dotenv';
 import type { ConfigOptions } from 'dotenv';
 
-// Color message wrappers
-export const error = colors.bold.red;
-export const warn = colors.bold.yellow;
-export const info = colors.bold.blue;
+// These functions will allow us to add some color to different messages on the CLI. I'm setting up
+// the `error` function to take a message like error('This is an error') and color it in bold and red
+const error = colors.bold.red;
+// we aren't using these for this particular script
+// const warn = colors.bold.yellow;
+// const info = colors.bold.blue;
 
-// Setup the environment variables config object that we will use in our various subcommands in this
-// project and export it. Change the `baseEnvPath` variable to be the location of the .env and
-// .env.example files that you are using for the `wk` binary (I keep the .env and .env.example files
-// inside of the same folder as this git repository, so I've pointed the location to that folder on
-// my machine)
+/**
+ * Sets up the initial dotenv configuration object
+ * @param overrideConfig - config options that you want to override from the default
+ * @returns a new dotenv config object
+ */
 export function getEnvConfig(overrideConfig?: ConfigOptions): ConfigOptions {
-  const baseEnvPath = `${Deno.env.get('HOME')}/vincit/scripts/wk`;
+  // Make sure that you change this to be the path to where you `git clone`d this repo on your
+  // system. the Deno.env.get('HOME') command will get your home folder for you, so from there
+  // provide the rest of the path to the repository. It's currently set up below as if you cloned
+  // the repo into your home folder in the ~/mtg folder. This is so that Deno knows where to find
+  // the proper .env and .env.example files in this repo and you can execute the script from
+  // anywhere on your system
+  const baseEnvPath = `${Deno.env.get('HOME')}/vincit/automate-with-deno/final`;
+
   return {
+    // don't allow this script to run properly if you
     allowEmptyValues: false,
-    example: `${baseEnvPath}/.env.example`,
+    // the path to the example environment variable file
+    example: `${baseEnvPath}/.env.defaults`,
+    // the path to the _actual_ environment variable file
     path: `${baseEnvPath}/.env`,
+    // if true, ensures that all the necessary environment variables scaffolded out in the
+    // .env.example file are here. If they're not all supplied in the .env file, it exits early
     safe: true,
+    // spread in any config overrides that we supply to this function
     ...(overrideConfig ?? {}),
   };
 }
@@ -31,8 +46,12 @@ const ENV = config(getEnvConfig());
 // Get the Google Meet and Zoom link keys from the .env file
 const MeetingLinks = Object.keys(ENV).reduce(
   (mtgs: Record<string, string>, mtg: string) => {
+    // match links that start with "MEET" or "ZOOM", and capture the text after the prefix and
+    // underscore. i.e. 'MEET_DAILY' will be a match and the value of 'DAILY' will be captured in
+    // the second item (index of 1) in the RegexpArray returned
     const meeting = mtg.match(/^(?:MEET|ZOOM)_(.*)$/);
     if (meeting && meeting.length > 1) {
+      // convert the current link name to lowercase and add it to our key/value pairs object
       return {
         ...mtgs,
         [meeting[1].toLowerCase()]: ENV[mtg],
@@ -44,14 +63,15 @@ const MeetingLinks = Object.keys(ENV).reduce(
   {},
 );
 
-// Create the main command
+// Create the mtg command
 await new Command()
-  // main command config
   .name('mtg')
   .version('0.1.0')
   .description(
     'Launch the desired meeting in the appropriate video call application or web browser',
   )
+  // here is the meat of this file. the `action` function is where we define the actual
+  // Typescript/Javascript code for Deno to execute when we run this CLI program
   .action(async () => {
     // If you're on linux, `xdg-open` will launch the URL in your default browser
     // If you're on MacOS, `open` will launch the URL in your default browser
@@ -68,45 +88,59 @@ await new Command()
       );
       Deno.exit();
     }
+    //
     const osCmds = {
       darwin: 'open',
       linux: 'xdg-open',
     };
 
-    // Iterate through the Google Meet and Zoom URL env key lists to try and find a key that matches
-    // the user's supplied meeting keyword. If we don't find one in any of the lists, then this will
-    // be undefined
-
-    const { mtg } = await prompt([{
-      name: 'mtg',
+    // Create a "prompt" UI component from Cliffy where we will supply the user with a list of
+    // possible video calls they can select from by typing in the name or scrolling with up/down
+    // arrow keys. the `prompt` UI function accepts an array of prompts, we can actually execute one
+    // prompt after another in sequence if we want, for this we just execute one. from that, we
+    // destructure the result that the user chose in the `mtg` variable
+    const selectedMeetingName = await Select.prompt({
       message: 'Choose a meeting to join',
-      type: Select,
       search: true,
       options: Object.keys(MeetingLinks),
-    }]);
-    const meeting = mtg ? MeetingLinks[mtg] : undefined;
+    });
 
-    // If no matching key was found, exit early and log out all the keywords that can be entered
-    if (!meeting) {
+    // Check to see if we have the proper URL for that link
+    const meetingURL = selectedMeetingName
+      ? MeetingLinks[selectedMeetingName]
+      : undefined;
+
+    // If no matching meeting link was found, exit early and log out all the meeting keywords that
+    // are valid options
+    if (!meetingURL) {
       console.log(
         error(
-          `Couldn\'t parse the Zoom url that you entered. Here are the valid options:\n${
+          `Couldn't find or parse the Zoom or Google Meet link that you entered. Here are the valid calls:\n${
             Object.keys(MeetingLinks)
               .sort()
               .join(', ')
           }`,
         ),
       );
+      // exit the CLI program
       Deno.exit();
-    } else if (meeting.includes('meet.google.com')) {
-      // Handle Google Meet links
+    } // Handle Google Meet links
+    else if (meetingURL.includes('meet.google.com')) {
       // Make sure that the executable command supplied to the LAUNCH_VIDEO_CMD environment variable
-      // is an executable before we try to execute it
-      const launchVideoCmdIsExecutableStatus = await Deno.run({
-        cmd: ['which', ENV.LAUNCH_VIDEO_CMD],
-        stderr: 'null',
-        stdout: 'null',
-      }).status();
+      // is an executable before we try to execute it. the `which` command on your Mac/Linux machine
+      // will check to see if the special command that you supplied is executable before we try to
+      // execute with that (i.e. if you normally have Brave browser installed but don't right now
+      // and tried to execute the `brave-browser` executable without it on your system)
+      const launchVideoCmdIsExecutableStatus = ENV.LAUNCH_VIDEO_CMD
+        ? await Deno.run({
+          cmd: ['which', ENV.LAUNCH_VIDEO_CMD],
+          // we don't want to see any extra output from `stderr` or `stdout` in our console
+          stderr: 'null',
+          stdout: 'null',
+        }).status()
+        // if that environment variable is empty then we don't even want to try to execute the
+        // `which` command and just skip below to using the default Operating system command
+        : { success: false };
 
       // If it is executable, then use that command. Otherwise use the default `open` or `xdg-open`
       // command depending on our current OS to launch the URL. Build that process and run it
@@ -115,21 +149,22 @@ await new Command()
           launchVideoCmdIsExecutableStatus.success
             ? ENV.LAUNCH_VIDEO_CMD
             : osCmds[currentOS],
-          MeetingLinks[mtg],
+          MeetingLinks[selectedMeetingName],
         ],
+        // we don't want to see any extra output from `stderr` or `stdout` in our console
         stderr: 'null',
         stdout: 'null',
       }).status();
-    } else {
-      // Handle Zoom links
+    } // Handle Zoom links
+    else {
       // Make sure we have a valid zoom link, so that we can transform it to the zoommtg:// protocol
       // that the Zoom app uses. This allows us to avoid even bothering to launch the URL in a web
       // browser first
-      const match = meeting.match(/zoom\.us\/j\/(\d+).+?pwd=(\w+)/);
+      const match = meetingURL.match(/zoom\.us\/j\/(\d+).+?pwd=(\w+)/);
       if (!match) {
         console.log(
           error(
-            `The Zoom URL that we have saved for '${mtg}' is invalid. Please check the URL to make sure it is a valid Zoom URL and try again.`,
+            `The Zoom URL that we have saved for '${selectedMeetingName}' is invalid. Please check the URL to make sure it is a valid Zoom URL and try again.`,
           ),
         );
         Deno.exit();
@@ -144,6 +179,7 @@ await new Command()
       // (`open` for MacOS and `xdg-open` for Linux)
       await Deno.run({
         cmd: [osCmds[currentOS], zoomLink],
+        // we don't want to see any extra output from `stderr` or `stdout` in our console
         stderr: 'null',
         stdout: 'null',
       }).status();

@@ -1,4 +1,5 @@
 {
+  // formatting options that the Deno LSP will use
   "fmt": {
     "options": {
       "singleQuote": true,
@@ -7,10 +8,25 @@
       "proseWrap": "preserve"
     }
   },
+  // same as the `scripts` key in your `package.json` files. these are scripts for Deno's script
+  // runner to execute for you
   "tasks": {
-    "compile-to-path": "rm $HOME/.local/bin/mtg; deno compile --unstable --allow-env --allow-read --allow-net --allow-run --import-map ./import_map.jsonc -o $HOME/.local/bin/mtg ./mod.ts",
-    "compile": "deno compile --unstable --allow-env --allow-read --allow-net --allow-run --import-map ./import_map.jsonc ./mod.ts"
-    "dev": "deno run --unstable --allow-env --allow-read --allow-net --allow-run -o mtg ./mod.ts"
+    // the `compile` script will compile the mod.ts file into a binary called `mtg` in the same folder as
+    // this repo. you can then toss that binary file onto your $PATH somewhere so that you can
+    // execute it anywhere. we also manually point deno to our import map because as of right now,
+    // when compiling Deno won't automatically pick up your import_map.json, you have to supply it
+    // to the deno cli as a flag manually :( 
+    "compile": "deno compile --unstable --allow-env --allow-read=.env,.env.defaults --allow-run=which,brave-browser,open,xdg-open --import-map ./import_map.jsonc -o ./mtg ./mod.ts"
+    // the `dev` script will run the mod.ts file with the proper permissions for testing purposes.
+    // you will probably want to compile this into a binary when you're done for ease-of-use
+    "dev": "deno run --unstable --allow-env --allow-read=.env,.env.defaults --allow-run=which,brave-browser,open,xdg-open ./mod.ts",
+    // the `compile-to-path` script automates the process of compiling the binary, removing the
+    // previous version on your $PATH, and moving the new binary to your $PATH. This assumes that
+    // the ~HOME/.local/bin folder is *already* on your $PATH like it is for me. you can adjust that
+    // folder to be anywhere on your system that you'd prefer (/usr/local/bin/mtg for example), this
+    // is just an example that I use personally
+    "compile-to-path": "rm $HOME/.local/bin/mtg; deno compile --unstable --allow-env --allow-read=.env,.env.defaults --allow-run=which,brave-browser,open,xdg-open --import-map ./import_map.jsonc -o $HOME/.local/bin/mtg ./mod.ts"
   },
+  // the import map is where all of our dependencies for this project are
   "importMap": "./import_map.jsonc"
 }
