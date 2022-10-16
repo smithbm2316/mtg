@@ -41,7 +41,7 @@ export function getEnvConfig(overrideConfig?: ConfigOptions): ConfigOptions {
 }
 
 // setup environment variable config to be the location of this script
-const ENV = config(getEnvConfig());
+const ENV = await config(getEnvConfig());
 
 // Get the Google Meet and Zoom link keys from the .env file
 const MeetingLinks = Object.keys(ENV).reduce(
